@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinpoint/DTO/auth.dart';
 import 'package:pinpoint/data/datasource/auth/auth_service.dart';
 import 'package:pinpoint/data/network/interseptor/auth_dio_intersecptor.dart';
-import 'package:pinpoint/repository/Storage/secure_storage_service.dart';
+import 'package:pinpoint/repository/storage/secure_storage_service.dart';
 import 'package:pinpoint/viewModel/storage/secure_storage_provider.dart';
 
 final authProvider = Provider<AuthController>((ref) {
@@ -40,7 +40,7 @@ class AuthController {
         await storageService.saveAuthData(
           jwt: response.data.jwt!,
           role: response.data.role ?? '',
-          userId: response.data.email ?? '',
+          userEmail: response.data.email ?? '',
         );
         return null;
       } else {

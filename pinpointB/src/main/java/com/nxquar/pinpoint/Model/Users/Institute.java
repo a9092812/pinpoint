@@ -1,6 +1,7 @@
 package com.nxquar.pinpoint.Model.Users;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.nxquar.pinpoint.Model.Address;
 import com.nxquar.pinpoint.Model.Batch;
 import com.nxquar.pinpoint.Model.Building;
@@ -44,12 +45,16 @@ private String geoJsonUrl;
 
 
     @OneToMany(mappedBy = "institute", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    @JsonIgnore
     private List<Building> buildings;
 
     @OneToMany(mappedBy = "institute", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Batch> batches;
 
     @OneToMany(mappedBy = "institute", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Subject> subjects;
 
     @JsonIgnore

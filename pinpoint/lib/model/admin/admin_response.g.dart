@@ -25,7 +25,7 @@ AdminResponse _$AdminResponseFromJson(Map<String, dynamic> json) =>
           .toList(),
       createdAt: json['createdAt'] as String,
       updatedAt: json['updatedAt'] as String,
-      isVerified: json['isVerified'] as bool,
+      isVerified: json['verified'] as bool,
     );
 
 Map<String, dynamic> _$AdminResponseToJson(AdminResponse instance) =>
@@ -41,5 +41,5 @@ Map<String, dynamic> _$AdminResponseToJson(AdminResponse instance) =>
       'notices': instance.notices,
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,
-      'isVerified': instance.isVerified,
+      'verified': instance.isVerified,
     };

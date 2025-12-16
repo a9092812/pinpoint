@@ -1,7 +1,7 @@
 package com.nxquar.pinpoint.controller;
 
 import com.nxquar.pinpoint.DTO.MessageResponse;
-import com.nxquar.pinpoint.DTO.TimetableRequest;
+import com.nxquar.pinpoint.DTO.timetable.request.TimetableRequest;
 import com.nxquar.pinpoint.DTO.timetable.TimetableDetailDto;
 import com.nxquar.pinpoint.Model.Timetable.Timetable;
 import com.nxquar.pinpoint.service.TimetableServices;
@@ -20,9 +20,13 @@ public class TimetableController {
     private TimetableServices timetableServices;
 
     @GetMapping("/{id}")
-    public ResponseEntity<TimetableDetailDto> getTimetableById(@PathVariable UUID id) {
-        return ResponseEntity.ok(timetableServices.getTimeTableById(id));
+    public ResponseEntity<TimetableDetailDto> getTimetableById(
+            @PathVariable UUID id,
+            @RequestHeader("Authorization") String jwt) {
+        String token = jwt.replace("Bearer ", "");
+        return ResponseEntity.ok(timetableServices.getTimeTableById(id, token));
     }
+
 
     @GetMapping
     public ResponseEntity<List<Timetable>> getAllTimetables(@RequestHeader("Authorization") String jwt) {
@@ -50,4 +54,13 @@ public class TimetableController {
         String token = jwt.replace("Bearer ", "");
         return ResponseEntity.ok(timetableServices.deleteTimeTable(id, token));
     }
+
+    @GetMapping("/batch/{batchId}")
+    public ResponseEntity<Timetable> getTimetableByBatchId(
+            @PathVariable UUID batchId,
+            @RequestHeader("Authorization") String jwt) {
+        String token = jwt.replace("Bearer ", "");
+        return ResponseEntity.ok(timetableServices.getTimeTableByBatchId(batchId, token));
+    }
+
 }

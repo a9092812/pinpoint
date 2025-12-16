@@ -31,11 +31,11 @@ class BuildingDto {
       ceilHeight: 4,
       floors: [
         FloorDto(id: 'floor-0', level: 0, rooms: [
-          RoomDto(id: 'room-001', name: 'Lobby', type: 'Common Area', floorLevel: 0, geometry: [[[ -74.0060, 40.7128 ], [ -74.0050, 40.7128 ], [ -74.0050, 40.7138 ], [ -74.0060, 40.7138 ], [ -74.0060, 40.7128 ]]]),
-          RoomDto(id: 'room-002', name: 'Office 101', type: 'Office', floorLevel: 0, geometry: [[[ -74.0050, 40.7138 ], [ -74.0040, 40.7138 ], [ -74.0040, 40.7148 ], [ -74.0050, 40.7148 ], [ -74.0050, 40.7138 ]]]),
+          RoomDto(id: 'room-001', name: 'Lobby', type: 'Common Area', floorLevel: 0),
+          RoomDto(id: 'room-002', name: 'Office 101', type: 'Office', floorLevel: 0),
         ]),
         FloorDto(id: 'floor-1', level: 1, rooms: [
-           RoomDto(id: 'room-101', name: 'Conference Room A', type: 'Meeting', floorLevel: 1, geometry: [[[ -74.0060, 40.7148 ], [ -74.0050, 40.7148 ], [ -74.0050, 40.7158 ], [ -74.0060, 40.7158 ], [ -74.0060, 40.7148 ]]]),
+           RoomDto(id: 'room-101', name: 'Conference Room A', type: 'Meeting', floorLevel: 1),
         ]),
       ],
     );

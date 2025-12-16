@@ -1,8 +1,8 @@
 package com.nxquar.pinpoint.controller;
 
-import com.nxquar.pinpoint.DTO.DayScheduleRequest;
 import com.nxquar.pinpoint.DTO.MessageResponse;
 import com.nxquar.pinpoint.DTO.timetable.DayScheduleDto;
+import com.nxquar.pinpoint.DTO.timetable.request.DayScheduleRequest;
 import com.nxquar.pinpoint.Model.Timetable.DaySchedule;
 import com.nxquar.pinpoint.service.ScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;

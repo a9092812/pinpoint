@@ -1,5 +1,7 @@
 package com.nxquar.pinpoint.service.implementation;
 
+import org.locationtech.jts.io.geojson.GeoJsonWriter;
+import com.nxquar.pinpoint.DTO.RoomMapDto;
 import com.nxquar.pinpoint.Model.Room;
 import com.nxquar.pinpoint.Model.Users.Admin;
 import com.nxquar.pinpoint.Model.Users.Institute;
@@ -81,5 +83,22 @@ public class RoomServiceImpl implements RoomService {
             throw new AccessDeniedException("Access denied to this institute's rooms.");
         }
         return roomRepo.findRoomsByInstitute(instituteId);
+    }
+
+
+    @Override
+    public List<RoomMapDto> getRoomsForMap(UUID buildingId, String token) {
+        GeoJsonWriter writer = new GeoJsonWriter();
+
+        return roomRepo.findRoomsByBuilding(buildingId)
+                .stream()
+                .map(room -> new RoomMapDto(
+                        room.getId(),
+                        room.getName(),
+                        room.getType(),
+                        room.getFloorLevel(),
+                        writer.write(room.getGeometry())
+                ))
+                .toList();
     }
 }

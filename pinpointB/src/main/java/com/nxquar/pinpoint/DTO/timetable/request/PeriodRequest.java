@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.UUID;
 
 @Data
-class PeriodRequest {
+public class PeriodRequest {
     private String name; // e.g., "Period 1"
     private String startTime; // e.g., "09:00"
     private String endTime; // e.g., "10:00"

@@ -10,9 +10,10 @@ TimetableDetail _$TimetableDetailFromJson(Map<String, dynamic> json) =>
     TimetableDetail(
       id: json['id'] as String,
       name: json['name'] as String,
-      schedules: (json['schedules'] as List<dynamic>)
-          .map((e) => DaySchedule.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      schedules: (json['schedules'] as List<dynamic>?)
+              ?.map((e) => DaySchedule.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$TimetableDetailToJson(TimetableDetail instance) =>

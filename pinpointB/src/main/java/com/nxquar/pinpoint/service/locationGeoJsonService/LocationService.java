@@ -1,6 +1,8 @@
 package com.nxquar.pinpoint.service.locationGeoJsonService;
 
-import com.nxquar.pinpoint.DTO.MessageResponse;
+ import com.nxquar.pinpoint.DTO.MessageResponse;
+ import com.nxquar.pinpoint.DTO.StudentLocationDto;
+ import com.nxquar.pinpoint.Model.Batch;
 import com.nxquar.pinpoint.Model.LocationPoint;
 import com.nxquar.pinpoint.Model.Timetable.Attendance;
 import com.nxquar.pinpoint.Model.Timetable.Period;
@@ -15,13 +17,13 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
+import java.util.stream.Collectors;
 
 @Service
-
 public class LocationService {
     @Autowired
     AdminRepo adminRepo;
@@ -31,14 +33,12 @@ public class LocationService {
     InstituteRepo instituteRepo;
     @Autowired
     private AttendanceRepo attendanceRepo;
-
-
     @Autowired
     JwtService jwtService;
-
     @Autowired
     private LocationPointRepo locationPointRepo;
-
+    @Autowired
+    private BatchRepo batchRepo;
 
     public MessageResponse saveLocation(LocationPoint point) {
         locationPointRepo.save(point);
@@ -87,7 +87,6 @@ public class LocationService {
         User student = userRepo.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Student with userId not present"));
 
-        // default: last 1 day if not provided
         if (start == null || end == null) {
             end = LocalDateTime.now();
             start = end.minusDays(1);
@@ -95,8 +94,6 @@ public class LocationService {
 
         return locationPointRepo.findByUserIdAndTimestampBetween(userId, start, end);
     }
-
-
 
     public List<LocationPoint> getUserLocation(UUID id, String jwt) {
         String email = jwtService.extractUserName(jwt);
@@ -115,6 +112,36 @@ public class LocationService {
         return locationPointRepo.findByUserId(id);
     }
 
+    public List<StudentLocationDto> getLiveLocationsForBatch(UUID batchId) {
+        Batch batch = batchRepo.findById(batchId)
+                .orElseThrow(() -> new EntityNotFoundException("Batch not found"));
 
+        List<StudentLocationDto> liveLocations = new ArrayList<>();
+        for (User student : batch.getStudents()) {
+            Optional<LocationPoint> latestPoint = locationPointRepo.findTopByUserOrderByTimestampDesc(student);
+            latestPoint.ifPresent(point -> liveLocations.add(
+                    new StudentLocationDto(
+                            student.getId(),
+                            student.getName(),
+                            point.getLatitude(),
+                            point.getLongitude(),
+                            point.getFloor(),
+                            point.getTimestamp()
+                    )
+            ));
+        }
+        return liveLocations;
+    }
+
+    public List<StudentLocationDto> getLocationHistoryForStudent(UUID studentId, LocalDateTime start, LocalDateTime end) {
+        List<LocationPoint> points = getLocationPoints(studentId, start, end);
+        return points.stream().map(point -> new StudentLocationDto(
+                point.getUser().getId(),
+                point.getUser().getName(),
+                point.getLatitude(),
+                point.getLongitude(),
+                point.getFloor(),
+                point.getTimestamp()
+        )).collect(Collectors.toList());
+    }
 }
-

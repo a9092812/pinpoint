@@ -1,131 +1,179 @@
 import 'package:flutter/material.dart';
-import 'package:pinpoint/model/building/building_dto.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinpoint/view/common/admin_list_screen.dart';
 import 'package:pinpoint/view/common/batch_list_screen.dart';
 import 'package:pinpoint/view/users/institute/building_detail_screen.dart';
+import 'package:pinpoint/view/users/institute/edit_institute_screen.dart';
 import 'package:pinpoint/view/users/institute/subject_list_screen.dart';
 import 'package:pinpoint/view/users/institute/upload_building_screen.dart';
 import 'package:pinpoint/view/users/institute/user_list_screen.dart';
 import 'package:pinpoint/view/widget/stat_card.dart';
+import 'package:pinpoint/viewModel/building/building_provider.dart';
+ import 'package:pinpoint/viewModel/institute/institute_provider.dart';
 
-class InstituteScreen extends StatelessWidget {
+class InstituteScreen extends ConsumerWidget {
   const InstituteScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final instituteAsync = ref.watch(instituteControllerProvider);
 
-    return SafeArea(
-      child: Scaffold(
-        // appBar: AppBar(
-        //   title: const Text("Institute Dashboard"),
-        //   backgroundColor: colorScheme.surface,
-        //   elevation: 1,
-        // ),
-        body: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Text
-                Text(
-                  "Dashboard",
-                  style: textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Quick Statistics Grid
-                _buildStatsGrid(context),
-
-                const SizedBox(height: 32),
-
-                // Main Action Button
-                _buildUploadButton(context),
-
-                const SizedBox(height: 32),
-
-                // Recent Activity Section
-                Text(
-                  "Buildings",
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildBuilindList()
-              ],
-            ),
-          ),
-        ),
+    return instituteAsync.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       ),
-    );
-  }
+      error: (e, _) => Scaffold(
+        body: Center(child: Text('Error loading institute: $e')),
+      ),
+      data: (profile) {
+        // Redirect if required field is missing
+        if (profile.name == null || profile.name!.isEmpty) {
+          Future.microtask(() {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => const CompleteInstituteProfileScreen(),
+              ),
+            );
+          });
+        }
 
-  Widget _buildBuilindList() {
-    final List<BuildingDto> _buildings = [
-      BuildingDto.getMockData(id: 'building-A', name: 'Main Campus Building'),
-      BuildingDto.getMockData(id: 'building-B', name: 'Engineering Block'),
-    ];
-    // -
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: _buildings.length,
-      itemBuilder: (context, index) {
-        final building = _buildings[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
-          child: ListTile(
-            leading: const Icon(Icons.business_outlined, size: 40),
-            title: Text(building.name ?? 'Unnamed Building',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('Floors: ${building.floors?.length ?? 0}'),
-            trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-            onTap: () {
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => BuildingDetailScreen(building: building),
-              ));
-            },
+        // Normal dashboard
+        return SafeArea(
+          child: Scaffold(
+            body: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Text
+                    Text(
+                      "Dashboard",
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Quick Statistics Grid
+                    _buildStatsGrid(context),
+
+                    const SizedBox(height: 32),
+
+                    // Main Action Button
+                    _buildUploadButton(context),
+
+                    const SizedBox(height: 32),
+
+                    // Buildings Section
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Buildings",
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.refresh),
+                          onPressed: () {
+                            ref.invalidate(buildingControllerProvider);
+                          },
+                        )
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildBuildingList(context, ref),
+                  ],
+                ),
+              ),
+            ),
           ),
         );
       },
     );
   }
 
-  /// Builds the grid of summary statistics.
+  Widget _buildBuildingList(BuildContext context, WidgetRef ref) {
+    final buildingsAsync = ref.watch(buildingControllerProvider);
+
+    return buildingsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error: $error')),
+      data: (buildings) {
+        if (buildings.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text('No buildings uploaded yet.'),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: buildings.length,
+          itemBuilder: (context, index) {
+            final building = buildings[index];
+            return Card(
+              margin:
+                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
+              child: ListTile(
+                leading: const Icon(Icons.business_outlined, size: 40),
+                title: Text(
+                  building.name ?? 'Unnamed Building',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                 trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                onTap: () {
+                  // Navigate to the details screen using the ID
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => BuildingDetailScreen(
+                        buildingId: building.id,
+                        buildingName: building.name,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildStatsGrid(BuildContext context) {
-    // Dummy data - replace with data from your view model
     final stats = [
       {
         'icon': Icons.admin_panel_settings_rounded,
         'label': 'Total Admins',
         'count': '12',
-        'screen': AdminListScreen(),
+        'screen': const AdminListScreen(),
       },
       {
         'icon': Icons.school_rounded,
         'label': 'Total Students',
         'count': '450',
-        'screen': StudentListScreen(), // You define this
+        'screen': const StudentListScreen(),
       },
       {
         'icon': Icons.groups_rounded,
         'label': 'Total Batches',
         'count': '15',
-        'screen': BatchListScreen(), // You define this
+        'screen': const BatchListScreen(),
       },
       {
         'icon': Icons.subject_rounded,
         'label': 'Total Subjects',
         'count': '30',
-        'screen': SubjectsListScreen(), // You define this
+        'screen': const SubjectsListScreen(),
       },
     ];
 
@@ -154,7 +202,6 @@ class InstituteScreen extends StatelessWidget {
     );
   }
 
-  /// Builds the "Upload Building Plan" button.
   Widget _buildUploadButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
@@ -162,12 +209,12 @@ class InstituteScreen extends StatelessWidget {
         icon: const Icon(Icons.upload_file_rounded),
         label: const Text("Upload Building Plan"),
         onPressed: () {
-          
           Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UploadBuildingPlanScreen(),
-              ));
+            context,
+            MaterialPageRoute(
+              builder: (context) => const UploadBuildingPlanScreen(),
+            ),
+          );
         },
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),

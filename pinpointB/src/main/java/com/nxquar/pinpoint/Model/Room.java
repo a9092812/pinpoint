@@ -1,9 +1,12 @@
 package com.nxquar.pinpoint.Model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nxquar.pinpoint.Model.Timetable.Period;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
@@ -23,17 +26,22 @@ public class Room {
     private String name;
     private String type;
     private Integer floorLevel;
-    @ManyToOne(fetch = FetchType.LAZY)
+    // Room.java
+    @ManyToOne
     @JsonIgnore
-    @JoinColumn(name = "floor_id")
     private Floor floor;
 
-    @JdbcTypeCode(SqlTypes.GEOMETRY)
-    @Column(columnDefinition = "geometry(MultiPolygon,4326)")
-    private Geometry geometry;
 
     @OneToMany(mappedBy = "site")
     @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private List<Period> periods = new ArrayList<>();
+
+    @JdbcTypeCode(SqlTypes.GEOMETRY)
+    @Column(columnDefinition = "geometry(MultiPolygon,4326)")
+    @JsonIgnore
+    private Geometry geometry;
+
 
 }

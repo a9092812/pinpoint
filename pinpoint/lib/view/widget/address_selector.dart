@@ -14,7 +14,7 @@ class AddressSelectorField extends StatelessWidget {
 
   void _selectAddress(BuildContext context) async {
     final selected = await Navigator.of(context).push<Address>(
-      MaterialPageRoute(builder: (context) => const AddressListScreen()),
+      MaterialPageRoute(builder: (context) => const AddEditAddressScreen()),
     );
 
     if (selected != null) {

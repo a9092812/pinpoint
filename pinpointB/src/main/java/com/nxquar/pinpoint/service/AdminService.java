@@ -13,7 +13,7 @@ public interface AdminService {
     MessageResponse createAdmin(AuthRequest request, String jwt);
     AdminResponse getAdminById(UUID adminId, String jwt);
     List<AdminResponse> getAllAdminsByInstitute(String jwt);
-
+    public AdminResponse getAdminByEmail(String email, String jwt);
     MessageResponse updateAdmin(UUID adminId, AdminRequest request, String jwt);
     MessageResponse deleteAdmin(UUID adminId, String jwt);
 }

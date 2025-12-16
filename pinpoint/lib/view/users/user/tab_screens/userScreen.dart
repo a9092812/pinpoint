@@ -83,8 +83,8 @@ class UserScreen extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: () {
 
-                  Navigator.push(context,MaterialPageRoute(builder: (context) => TimetableDetailScreen(timetable: TimetableDetail.getMockData(),)      ));
-TimetableDetailScreen(timetable: TimetableDetail.getMockData(),)     ;           },
+                  Navigator.push(context,MaterialPageRoute(builder: (context) => TimetableDetailScreen( timetableId: '', batchId: '',)      ));
+TimetableDetailScreen( timetableId: '', batchId: '',)     ;           },
                 child: const Text("View Full Timetable"),
               ),
             ),

@@ -18,8 +18,8 @@ InstituteResponse _$InstituteResponseFromJson(Map<String, dynamic> json) =>
           : Address.fromJson(json['address'] as Map<String, dynamic>),
       createdAt: json['createdAt'] as String?,
       updatedAt: json['updatedAt'] as String?,
-      isVerified: json['isVerified'] as bool?,
-      baseAltitude: json['baseAltitude'] as String,
+      isVerified: json['verified'] as bool?,
+      baseAltitude: json['baseAltitude'] as String?,
     );
 
 Map<String, dynamic> _$InstituteResponseToJson(InstituteResponse instance) =>
@@ -32,6 +32,6 @@ Map<String, dynamic> _$InstituteResponseToJson(InstituteResponse instance) =>
       'address': instance.address,
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,
-      'isVerified': instance.isVerified,
+      'verified': instance.isVerified,
       'baseAltitude': instance.baseAltitude,
     };

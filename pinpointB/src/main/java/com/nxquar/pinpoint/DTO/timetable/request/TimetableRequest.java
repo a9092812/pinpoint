@@ -7,7 +7,8 @@ import java.util.UUID;
 
 @Data
 public class TimetableRequest {
-    private String name; // e.g., "BTech CSE 2024 - Main Timetable"
+    private UUID id;
+    private String name;
     private UUID batchId;
     private List<DayScheduleRequest> schedules;
 }

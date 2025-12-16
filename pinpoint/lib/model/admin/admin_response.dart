@@ -19,6 +19,7 @@ class AdminResponse {
   final List<NoticeDto> notices;
   final String createdAt;
   final String updatedAt;
+  @JsonKey(name: 'verified')
   final bool isVerified;
 
   AdminResponse({

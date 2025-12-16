@@ -16,6 +16,11 @@ abstract class AdminService {
   Future<HttpResponse<MessageResponse>> createAdmin(
     @Body() AuthRequest request,
   );
+  @GET("/email/{email}")
+Future<HttpResponse<AdminResponse>> getAdminByEmail(
+  @Path("email") String email,
+);
+
 
   @GET("/{adminId}")
   Future<HttpResponse<AdminResponse>> getAdminById(

@@ -1,43 +1,37 @@
+ 
 import 'package:dio/dio.dart';
 import 'package:pinpoint/model/user/user_detail_dto.dart';
 import 'package:pinpoint/model/user/user_list_dto.dart';
+import 'package:retrofit/retrofit.dart';
 
+ part 'user_service.g.dart';
 
-class UserApiService {
-  final Dio _dio;
+ @RestApi()
+abstract class UserApiService {
+   factory UserApiService(Dio dio, {String baseUrl}) = _UserApiService;
 
-  UserApiService(this._dio);
+   @GET('/api/users/all/{id}')
+  Future<List<UserListDto>> getAllUsers(
+    @Path('id') String instituteOrAdminId,
+    @Header('Authorization') String token,
+  );
 
-  Future<List<UserListDto>> getAllUsers(String token, String instituteOrAdminId) async {
-    final response = await _dio.get(
-      '/api/users/all/$instituteOrAdminId',
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
-    );
-    return (response.data as List)
-        .map((json) => UserListDto.fromJson(json))
-        .toList();
-  }
+   @GET('/api/users/{id}')
+  Future<UserDetailDto> getUserById(
+    @Path('id') String userId,
+    @Header('Authorization') String token,
+  );
 
-  Future<UserDetailDto> getUserById(String token, String userId) async {
-    final response = await _dio.get(
-      '/api/users/$userId',
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
-    );
-    return UserDetailDto.fromJson(response.data);
-  }
+   @PUT('/api/users/{id}')
+  Future<void> updateUser(
+    @Path('id') String userId,
+    @Header('Authorization') String token,
+    @Body() Map<String, dynamic> body,
+  );
 
-  Future<void> deleteUser(String token, String userId) async {
-    await _dio.delete(
-      '/api/users/$userId',
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
-    );
-  }
-
-  Future<void> updateUser(String token, String userId, Map<String, dynamic> body) async {
-    await _dio.put(
-      '/api/users/$userId',
-      data: body,
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
-    );
-  }
+   @DELETE('/api/users/{id}')
+  Future<void> deleteUser(
+    @Path('id') String userId,
+    @Header('Authorization') String token,
+  );
 }

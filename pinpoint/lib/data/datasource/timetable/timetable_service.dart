@@ -1,43 +1,53 @@
+import 'package:dio/dio.dart';
 import 'package:pinpoint/model/timetable/day_schedule.dart';
 import 'package:pinpoint/model/timetable/period.dart';
 import 'package:pinpoint/model/timetable/timetable_detail.dart';
 import 'package:pinpoint/model/timetable/timetable_summary.dart';
+import 'package:pinpoint/resources/constant/string/appString.dart';
 import 'package:retrofit/retrofit.dart';
-import 'package:dio/dio.dart';
-
 
 part 'timetable_service.g.dart';
 
-@RestApi(baseUrl: "https://your.api.url/api")
-abstract class ApiService {
-  factory ApiService(Dio dio, {String baseUrl}) = _ApiService;
+@RestApi(baseUrl: "${AppString.baseUrl}/api")
+abstract class TimetableService {
+  factory TimetableService(Dio dio, {String baseUrl}) = _TimetableService;
 
+  // === Timetable Endpoints ===
   @GET("/timetables")
-  Future<List<TimetableSummary>> getTimetables(@Header("Authorization") String token);
+  Future<HttpResponse<List<TimetableSummary>>> getTimetables();
 
   @GET("/timetables/{id}")
-  Future<TimetableDetail> getTimetableDetail(@Path("id") String id, @Header("Authorization") String token);
+  Future<HttpResponse<TimetableDetail>> getTimetableById(@Path("id") String id);
 
-  // DaySchedule Endpoints
+  @POST("/timetables")
+  Future<HttpResponse<TimetableDetail>> createTimetable(@Body() Map<String, dynamic> body);
+
+  @PUT("/timetables")
+  Future<HttpResponse<TimetableDetail>> updateTimetable(@Body() Map<String, dynamic> body);
+
+  @GET("/timetables/batch/{batchId}")
+  Future<HttpResponse<TimetableDetail>> getTimetableByBatchId(@Path("batchId") String batchId);
+
+  @DELETE("/timetables/{id}")
+  Future<HttpResponse<void>> deleteTimetable(@Path("id") String id);
+
+  // === DaySchedule Endpoints ===
   @GET("/day-schedules/{id}")
-  Future<DaySchedule> getDaySchedule(@Path("id") String id, @Header("Authorization") String token);
+  Future<HttpResponse<DaySchedule>> getDaySchedule(@Path("id") String id);
 
   @PUT("/day-schedules/{id}")
-  Future<DaySchedule> updateDaySchedule(
+  Future<HttpResponse<DaySchedule>> updateDaySchedule(
     @Path("id") String id,
-    @Body() DaySchedule schedule,
-    @Header("Authorization") String token,
+    @Body() Map<String, dynamic> schedule,
   );
 
-  // Period Endpoints
+  // === Period Endpoints ===
   @GET("/periods/{id}")
-  Future<Period> getPeriod(@Path("id") String id, @Header("Authorization") String token);
+  Future<HttpResponse<Period>> getPeriod(@Path("id") String id);
 
   @PUT("/periods/{id}")
-  Future<Period> updatePeriod(
+  Future<HttpResponse<Period>> updatePeriod(
     @Path("id") String id,
-    @Body() Period period,
-    @Header("Authorization") String token,
+    @Body() Map<String, dynamic> period,
   );
 }
-

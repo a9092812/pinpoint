@@ -40,6 +40,8 @@ public class BuildingController {
             Building building = locationParsingService.processGeoJsonBuilding(geoJson,token);
             return ResponseEntity.ok(building);
         } catch (Exception e) {
+            e.printStackTrace();
+
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
     }
@@ -60,10 +62,11 @@ public class BuildingController {
 
     @PutMapping("/{buildingId}/altitude")
     public ResponseEntity<MessageResponse> updateBaseAltitude(@PathVariable UUID buildingId,
+                                                              @RequestParam String name,
                                                               @RequestParam Integer baseAltitude,
                                                               @RequestParam Integer ceilHeight,
                                                               @RequestHeader("Authorization") String jwt) {
         String token = jwt.replace("Bearer ", "");
-        return ResponseEntity.ok(buildingService.updateBaseAltitude(baseAltitude, ceilHeight,buildingId, token));
+        return ResponseEntity.ok(buildingService.updateBaseAltitude(name,baseAltitude, ceilHeight,buildingId, token));
     }
 }

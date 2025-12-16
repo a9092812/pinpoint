@@ -1,28 +1,28 @@
-import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:pinpoint/viewModel/building/building_provider.dart';
+import 'package:pinpoint/viewModel/location/geojson_upload_provider.dart';
 
-// Note: To use this screen, you need to add the following dependencies
-// to your pubspec.yaml file:
-// dependencies:
-//   file_picker: ^6.2.1
-//   geolocator: ^12.0.0
-
-/// A screen for uploading a GeoJSON building plan and configuring its height properties.
-class UploadBuildingPlanScreen extends StatefulWidget {
+class UploadBuildingPlanScreen extends ConsumerStatefulWidget {
   const UploadBuildingPlanScreen({super.key});
 
   @override
-  State<UploadBuildingPlanScreen> createState() => _UploadBuildingPlanScreenState();
+  ConsumerState<UploadBuildingPlanScreen> createState() =>
+      _UploadBuildingPlanScreenState();
 }
 
-class _UploadBuildingPlanScreenState extends State<UploadBuildingPlanScreen> {
+class _UploadBuildingPlanScreenState
+    extends ConsumerState<UploadBuildingPlanScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _ceilHeightController = TextEditingController();
   final _baseHeightController = TextEditingController();
 
-  String? _pickedFileName;
+  PlatformFile? _pickedFile;
   bool _isFetchingLocation = false;
+  bool _isUploading = false;
 
   /// Opens the device's file picker to select a GeoJSON file.
   Future<void> _pickGeoJsonFile() async {
@@ -34,17 +34,17 @@ class _UploadBuildingPlanScreenState extends State<UploadBuildingPlanScreen> {
 
       if (result != null) {
         setState(() {
-          _pickedFileName = result.files.single.name;
-          // In a real app, you would handle the file bytes or path:
-          // final fileBytes = result.files.single.bytes;
-          // final filePath = result.files.single.path;
+          _pickedFile = result.files.single;
         });
       }
     } catch (e) {
-      // Handle potential errors, e.g., permissions not granted
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking file: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error picking file: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -52,14 +52,15 @@ class _UploadBuildingPlanScreenState extends State<UploadBuildingPlanScreen> {
   Future<void> _getCurrentAltitude() async {
     setState(() => _isFetchingLocation = true);
     try {
-      // Check for location permissions
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location permissions are denied.')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Location permissions are denied.')),
+            );
+          }
           setState(() => _isFetchingLocation = false);
           return;
         }
@@ -68,45 +69,95 @@ class _UploadBuildingPlanScreenState extends State<UploadBuildingPlanScreen> {
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
       );
-      
+
       setState(() {
-        // Update the text field with the fetched altitude
         _baseHeightController.text = position.altitude.toStringAsFixed(2);
       });
-
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not fetch location: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Could not fetch location: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
     } finally {
-      setState(() => _isFetchingLocation = false);
+      if (mounted) {
+        setState(() => _isFetchingLocation = false);
+      }
     }
   }
-  
-  void _submitPlan() {
+
+  Future<void> _submitPlan() async {
     if (_formKey.currentState!.validate()) {
-      if (_pickedFileName == null) {
+      if (_pickedFile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a GeoJSON file.'), backgroundColor: Colors.red),
+          const SnackBar(
+              content: Text('Please select a GeoJSON file.'),
+              backgroundColor: Colors.red),
         );
         return;
       }
-      
-      // TODO: Implement the API call to upload the file and data
-      print('Submitting Plan:');
-      print('File: $_pickedFileName');
-      print('Ceiling Height: ${_ceilHeightController.text}');
-      print('Base Height: ${_baseHeightController.text}');
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Uploading building plan...'), backgroundColor: Colors.green),
-      );
-      Navigator.of(context).pop();
+
+      setState(() => _isUploading = true);
+
+      try {
+        // 1. Upload the GeoJSON File
+        final uploadService = ref.read(geoJsonUploadServiceProvider);
+        final uploadedBuilding =
+            await uploadService.uploadGeoJsonFile(_pickedFile!);
+
+        if (uploadedBuilding != null) {
+          // 2. If upload successful, update the altitude settings
+          final buildingId = uploadedBuilding.id;
+          final buildingName = _nameController.text.trim();
+          final baseAlt = int.tryParse(_baseHeightController.text) ?? 0;
+          final ceilHeight = int.tryParse(_ceilHeightController.text) ?? 0;
+
+          // Call the repository to update altitude settings
+          // This assumes updateBaseAltitude is available in your buildingRepositoryProvider
+          await ref.read(buildingRepositoryProvider).updateBaseAltitude(
+  buildingId,
+  buildingName,        // ✅ NEW
+  baseAlt,
+  ceilHeight,
+);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Building plan uploaded successfully!'),
+                  backgroundColor: Colors.green),
+            );
+            ref.invalidate(buildingControllerProvider);
+            Navigator.of(context).pop(); // Go back to previous screen
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Failed to upload building plan.'),
+                  backgroundColor: Colors.red),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('An error occurred: $e'),
+                backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isUploading = false);
+      }
     }
   }
 
   @override
   void dispose() {
+      _nameController.dispose();
     _ceilHeightController.dispose();
     _baseHeightController.dispose();
     super.dispose();
@@ -123,6 +174,17 @@ class _UploadBuildingPlanScreenState extends State<UploadBuildingPlanScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
+                        _buildSectionHeader('Building Name'),
+
+            _buildTextFormField(
+  controller: _nameController,
+  labelText: 'Building Name',
+  hintText: 'e.g., Lecture Theater Block',
+  icon: Icons.apartment_outlined,
+  isNumber: false
+),
+const SizedBox(height: 16),
+
             // --- File Picker Section ---
             _buildSectionHeader('Building Plan File'),
             _buildFilePickerTile(),
@@ -135,7 +197,8 @@ class _UploadBuildingPlanScreenState extends State<UploadBuildingPlanScreen> {
               labelText: 'Ceiling Height (in meters)',
               hintText: 'e.g., 3.5',
               icon: Icons.height_outlined,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
             ),
             const SizedBox(height: 16),
             _buildTextFormField(
@@ -143,9 +206,13 @@ class _UploadBuildingPlanScreenState extends State<UploadBuildingPlanScreen> {
               labelText: 'Base Floor Altitude (in meters)',
               hintText: 'Enter manually or get from GPS',
               icon: Icons.layers_outlined,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               suffixIcon: _isFetchingLocation
-                  ? const CircularProgressIndicator()
+                  ? const Padding(
+                      padding: EdgeInsets.all(12.0),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : IconButton(
                       icon: const Icon(Icons.my_location_rounded),
                       onPressed: _getCurrentAltitude,
@@ -153,14 +220,22 @@ class _UploadBuildingPlanScreenState extends State<UploadBuildingPlanScreen> {
                     ),
             ),
             const SizedBox(height: 32),
-            
+
             // --- Submit Button ---
-            ElevatedButton.icon(
-              onPressed: _submitPlan,
-              icon: const Icon(Icons.cloud_upload_outlined),
-              label: const Text('Save Plan'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+            SizedBox(
+              height: 50,
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isUploading ? null : _submitPlan,
+                icon: _isUploading
+                    ? const SizedBox.shrink()
+                    : const Icon(Icons.cloud_upload_outlined),
+                label: _isUploading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Save Plan'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
               ),
             ),
           ],
@@ -174,7 +249,10 @@ class _UploadBuildingPlanScreenState extends State<UploadBuildingPlanScreen> {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        style: Theme.of(context)
+            .textTheme
+            .titleLarge
+            ?.copyWith(fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -189,40 +267,43 @@ class _UploadBuildingPlanScreenState extends State<UploadBuildingPlanScreen> {
       child: ListTile(
         onTap: _pickGeoJsonFile,
         leading: const Icon(Icons.map_outlined, color: Colors.blueAccent),
-        title: Text(_pickedFileName ?? 'Select GeoJSON file'),
-        subtitle: _pickedFileName != null ? const Text('File selected') : null,
+        title: Text(_pickedFile?.name ?? 'Select GeoJSON file'),
+        subtitle: _pickedFile != null ? const Text('File selected') : null,
         trailing: const Icon(Icons.attach_file),
       ),
     );
   }
+Widget _buildTextFormField({
+  required TextEditingController controller,
+  required String labelText,
+  required String hintText,
+  required IconData icon,
+  TextInputType? keyboardType,
+  Widget? suffixIcon,
+  bool isNumber = false, // ✅ NEW
+}) {
+  return TextFormField(
+    controller: controller,
+    keyboardType: keyboardType,
+    decoration: InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      prefixIcon: Icon(icon),
+      suffixIcon: suffixIcon,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+    ),
+    validator: (value) {
+      if (value == null || value.isEmpty) {
+        return 'This field is required';
+      }
 
-  Widget _buildTextFormField({
-    required TextEditingController controller,
-    required String labelText,
-    required String hintText,
-    required IconData icon,
-    TextInputType? keyboardType,
-    Widget? suffixIcon,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: labelText,
-        hintText: hintText,
-        prefixIcon: Icon(icon),
-        suffixIcon: suffixIcon,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'This field is required';
-        }
-        if (double.tryParse(value) == null) {
-          return 'Please enter a valid number';
-        }
-        return null;
-      },
-    );
-  }
+      // ✅ only validate numbers when needed
+      if (isNumber && double.tryParse(value) == null) {
+        return 'Please enter a valid number';
+      }
+
+      return null;
+    },
+  );
 }
+    }

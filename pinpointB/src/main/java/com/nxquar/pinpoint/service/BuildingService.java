@@ -11,5 +11,5 @@ public interface BuildingService {
     Building getBuildingById(UUID id, String jwt);
 
     List<Building> getBuildingsByInstitute(UUID instituteId, String jwt);
-MessageResponse updateBaseAltitude(Integer baseAltitude, Integer ceilHeight, UUID BuildingId, String jwt );
+MessageResponse updateBaseAltitude(String name,Integer baseAltitude, Integer ceilHeight, UUID BuildingId, String jwt );
 }

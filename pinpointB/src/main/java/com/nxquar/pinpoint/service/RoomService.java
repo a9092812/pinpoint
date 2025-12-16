@@ -1,5 +1,6 @@
 package com.nxquar.pinpoint.service;
 
+import com.nxquar.pinpoint.DTO.RoomMapDto;
 import com.nxquar.pinpoint.Model.Room;
 
 import java.util.List;
@@ -15,5 +16,6 @@ public interface RoomService {
 
     List<Room> getRoomsByInstitute(UUID instituteId, String jwt);
 
+    List<RoomMapDto> getRoomsForMap(UUID buildingId, String token);
 
 }

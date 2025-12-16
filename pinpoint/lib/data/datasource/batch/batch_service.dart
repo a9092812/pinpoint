@@ -7,19 +7,17 @@ import 'package:retrofit/retrofit.dart';
 
 
 part 'batch_service.g.dart';
-
 @RestApi(baseUrl: AppString.baseUrl)
 abstract class BatchService {
   factory BatchService(Dio dio, {String baseUrl}) = _BatchService;
 
   @POST("/api/batches")
-  Future<HttpResponse<BatchListResponse>> createBatch(
-    @Body() BatchListResponse batch,
+  Future<HttpResponse<BatchDetailResponse>> createBatch(
+    @Body() Map<String, dynamic> batch,
   );
 
   @GET("/api/batches")
-  Future<HttpResponse<List<BatchListResponse>>> getAllBatches(
-  );
+  Future<HttpResponse<List<BatchListResponse>>> getAllBatches();
 
   @GET("/api/batches/{id}")
   Future<HttpResponse<BatchDetailResponse>> getBatchById(
@@ -30,4 +28,8 @@ abstract class BatchService {
   Future<HttpResponse<MessageResponse>> deleteBatch(
     @Path("id") String id,
   );
+
+  @POST("/api/batches")
+Future<HttpResponse<dynamic>> createBatchRaw(@Body() Map<String, dynamic> batch);
+
 }

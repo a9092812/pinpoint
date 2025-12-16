@@ -14,9 +14,11 @@ class InstituteResponse {
   final Address? address;
   final String? createdAt;
   final String? updatedAt;
-  final bool? isVerified;
-      final String baseAltitude;
 
+  @JsonKey(name: "verified")
+  final bool? isVerified;
+
+  final String? baseAltitude; // make it nullable
 
   InstituteResponse({
     this.id,
@@ -28,8 +30,7 @@ class InstituteResponse {
     this.createdAt,
     this.updatedAt,
     this.isVerified,
-    required this.baseAltitude,
-
+    this.baseAltitude,
   });
 
   factory InstituteResponse.fromJson(Map<String, dynamic> json) =>

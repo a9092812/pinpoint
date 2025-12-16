@@ -11,13 +11,6 @@ RoomDto _$RoomDtoFromJson(Map<String, dynamic> json) => RoomDto(
       name: json['name'] as String,
       type: json['type'] as String,
       floorLevel: (json['floorLevel'] as num).toInt(),
-      geometry: (json['geometry'] as List<dynamic>)
-          .map((e) => (e as List<dynamic>)
-              .map((e) => (e as List<dynamic>)
-                  .map((e) => (e as num).toDouble())
-                  .toList())
-              .toList())
-          .toList(),
     );
 
 Map<String, dynamic> _$RoomDtoToJson(RoomDto instance) => <String, dynamic>{
@@ -25,5 +18,4 @@ Map<String, dynamic> _$RoomDtoToJson(RoomDto instance) => <String, dynamic>{
       'name': instance.name,
       'type': instance.type,
       'floorLevel': instance.floorLevel,
-      'geometry': instance.geometry,
     };

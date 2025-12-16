@@ -22,7 +22,7 @@ public class AdminResponse {
     private String role;
     private Address address;
     private UUID instituteId;
-    private List<BatchListResponse> batchs;
+    private List<BatchListResponse> batches;
     private List<Notice> notices;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

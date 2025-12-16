@@ -19,6 +19,13 @@ public class AdminController {
     @Autowired
     private AdminService adminService;
 
+    @GetMapping("/email/{email}")
+    public ResponseEntity<AdminResponse> getAdminByEmail(@PathVariable String email,
+                                                         @RequestHeader("Authorization") String jwt) {
+        String token = jwt.replace("Bearer ", "");
+        return ResponseEntity.ok(adminService.getAdminByEmail(email, token));
+    }
+
     @PostMapping
     public ResponseEntity<MessageResponse> createAdmin(@RequestBody AuthRequest request,
                                                        @RequestHeader("Authorization") String jwt) {

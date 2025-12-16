@@ -57,7 +57,7 @@ public class AdminServiceImpl implements AdminService {
         admin.setRole(Role.ADMIN);
 
         adminRepo.save(admin);
-        return new MessageResponse("Admin Deleted SucessFully");
+        return new MessageResponse("Admin created SucessFully");
 
     }
 
@@ -88,6 +88,13 @@ public class AdminServiceImpl implements AdminService {
         return adminRepo.findByInstituteId(institute.getId()).stream()
                 .map(AdminMapper::toResponse)
                 .toList();
+    }
+    @Override
+    public AdminResponse getAdminByEmail(String email, String jwt) {
+
+        Admin admin = adminRepo.findByEmail(email);
+
+        return AdminMapper.toResponse(admin);
     }
 
 

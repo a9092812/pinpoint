@@ -1,10 +1,13 @@
 package com.nxquar.pinpoint.Model.Timetable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nxquar.pinpoint.Model.Room;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.time.LocalTime;
 import java.util.UUID;
@@ -28,10 +31,15 @@ public class Period {
     
 //    @ManyToOne
 //    private User teacher; // Optional
-    
+@ManyToOne
+@JsonIgnore
+@ToString.Exclude
+@EqualsAndHashCode.Exclude
+private Room site;
+
+
+
     @ManyToOne
-    private Room site;
-    
-    @ManyToOne
+    @JsonIgnore
     private DaySchedule daySchedule;
 }

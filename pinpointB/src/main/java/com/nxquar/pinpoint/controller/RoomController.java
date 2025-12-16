@@ -1,5 +1,6 @@
 package com.nxquar.pinpoint.controller;
 
+import com.nxquar.pinpoint.DTO.RoomMapDto;
 import com.nxquar.pinpoint.Model.Room;
 import com.nxquar.pinpoint.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,16 @@ public class RoomController {
         String token = jwt.replace("Bearer ", "");
         return ResponseEntity.ok(roomService.getRoomsByBuilding(buildingId, token));
     }
+
+    @GetMapping("/building/{buildingId}/map")
+    public ResponseEntity<List<RoomMapDto>> getRoomsForMap(
+            @PathVariable UUID buildingId,
+            @RequestHeader("Authorization") String jwt
+    ) {
+        String token = jwt.replace("Bearer ", "");
+        return ResponseEntity.ok(roomService.getRoomsForMap(buildingId, token));
+    }
+
 
     @GetMapping("/institute/{instituteId}")
     public ResponseEntity<List<Room>> getRoomsByInstitute(@PathVariable UUID instituteId,

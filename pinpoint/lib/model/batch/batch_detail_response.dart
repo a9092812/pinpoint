@@ -4,24 +4,39 @@ part 'batch_detail_response.g.dart';
 
 @JsonSerializable()
 class BatchDetailResponse {
-  final String id;
+  final String? id;  
   final String name;
   final String code;
-  final List<BatchUser> students;
-  final List<BatchAdmin> admins;
+  final List<BatchUser> students;  
+  final List<BatchAdmin> admins;  
   final String? timetableId;
 
   BatchDetailResponse({
-    required this.id,
+    this.id,
     required this.name,
     required this.code,
-    required this.students,
-    required this.admins,
+    this.students = const [],
+    this.admins = const [],
     this.timetableId,
   });
 
-  factory BatchDetailResponse.fromJson(Map<String, dynamic> json) =>
-      _$BatchDetailResponseFromJson(json);
+  factory BatchDetailResponse.fromJson(Map<String, dynamic> json) {
+    return BatchDetailResponse(
+      id: (json['id'] == null || json['id'] == '') ? null : json['id'].toString(),
+      name: json['name'] ?? '',
+      code: json['code'] ?? '',
+      students: (json['students'] as List<dynamic>?)
+              ?.map((e) => BatchUser.fromJson(e))
+              .toList() ?? [],
+      admins: (json['admins'] as List<dynamic>?)
+              ?.map((e) => BatchAdmin.fromJson(e))
+              .toList() ?? [],
+     timetableId: (json['timetableId'] == null || json['timetableId'] == '')
+    ? null
+    : json['timetableId'].toString(),
+
+    );
+  }
 
   Map<String, dynamic> toJson() => _$BatchDetailResponseToJson(this);
 }

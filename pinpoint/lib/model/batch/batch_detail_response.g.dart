@@ -8,15 +8,17 @@ part of 'batch_detail_response.dart';
 
 BatchDetailResponse _$BatchDetailResponseFromJson(Map<String, dynamic> json) =>
     BatchDetailResponse(
-      id: json['id'] as String,
+      id: json['id'] as String?,
       name: json['name'] as String,
       code: json['code'] as String,
-      students: (json['students'] as List<dynamic>)
-          .map((e) => BatchUser.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      admins: (json['admins'] as List<dynamic>)
-          .map((e) => BatchAdmin.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      students: (json['students'] as List<dynamic>?)
+              ?.map((e) => BatchUser.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      admins: (json['admins'] as List<dynamic>?)
+              ?.map((e) => BatchAdmin.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       timetableId: json['timetableId'] as String?,
     );
 

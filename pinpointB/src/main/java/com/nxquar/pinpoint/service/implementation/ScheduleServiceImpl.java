@@ -1,11 +1,10 @@
 package com.nxquar.pinpoint.service.implementation;
 
-import com.nxquar.pinpoint.DTO.DayScheduleRequest;
 import com.nxquar.pinpoint.DTO.MessageResponse;
 import com.nxquar.pinpoint.DTO.timetable.DayScheduleDto;
 import com.nxquar.pinpoint.DTO.timetable.PeriodDto;
+import com.nxquar.pinpoint.DTO.timetable.request.DayScheduleRequest;
 import com.nxquar.pinpoint.Model.Timetable.DaySchedule;
-import com.nxquar.pinpoint.Model.Timetable.Period;
 import com.nxquar.pinpoint.Model.Timetable.Timetable;
 import com.nxquar.pinpoint.Repository.DayScheduleRepo;
 import com.nxquar.pinpoint.Repository.TimeTableRepo;
@@ -21,30 +20,36 @@ import java.util.UUID;
 
 
 @Service
-
 public class ScheduleServiceImpl implements ScheduleService {
-@Autowired
-private DayScheduleRepo dayScheduleRepo;
+    @Autowired
+    private DayScheduleRepo dayScheduleRepo;
     @Autowired
     private TimeTableRepo timeTableRepo;
     @Autowired
     JwtService jwtService;
 
     @Override
-    public DaySchedule createSchedule(DayScheduleRequest schedule, String jwt) {
-        String role= jwtService.extractRole(jwt);
-        boolean isInstitute= role.equals("INSTITUTE");
-        boolean isAdmin= role.equals("ADMIN");
+    public DaySchedule createSchedule(DayScheduleRequest scheduleRequest, String jwt) {
+        String role = jwtService.extractRole(jwt);
+        boolean isInstitute = role.equals("INSTITUTE");
+        boolean isAdmin = role.equals("ADMIN");
 
-        if(!(isInstitute || isAdmin)){
-            throw  new AccessDeniedException("You are not Authorized for creating Admin ");
+        if (!(isInstitute || isAdmin)) {
+            throw new AccessDeniedException("You are not Authorized for creating a schedule");
         }
 
+        // 1. Find the parent Timetable using the ID from the request DTO
+        Timetable timetable = timeTableRepo.findById(scheduleRequest.getTimetableId())
+                .orElseThrow(() -> new EntityNotFoundException("Timetable not found with ID: " + scheduleRequest.getTimetableId()));
 
+        // 2. Create the new DaySchedule and link it to the parent
+        DaySchedule newSchedule = new DaySchedule();
+        newSchedule.setTimetable(timetable); // This now works correctly
+        newSchedule.setDayOfWeek(scheduleRequest.getDayOfWeek());
 
-        DaySchedule newSchedule= new DaySchedule();
-        newSchedule.setTimetable(schedule.getTimetable());
-        newSchedule.setDayOfWeek(schedule.getDayOfWeek());
+        // Note: This standalone method does not create the periods from the request.
+        // The "all-in-one" method in TimetableServicesImpl is more complete.
+
         return dayScheduleRepo.save(newSchedule);
     }
 
@@ -54,7 +59,7 @@ private DayScheduleRepo dayScheduleRepo;
                 .orElseThrow(() -> new EntityNotFoundException("Schedule not found"));
 
         List<PeriodDto> periodDtos = schedule.getPeriods().stream()
-                .map(p ->  PeriodDto.fromEntity(p))
+                .map(PeriodDto::fromEntity)
                 .toList();
 
         return new DayScheduleDto(
@@ -101,7 +106,7 @@ private DayScheduleRepo dayScheduleRepo;
 
         // Map to DTO
         List<PeriodDto> periodDtos = saved.getPeriods().stream()
-                .map(p ->  PeriodDto.fromEntity(p))
+                .map(PeriodDto::fromEntity)
                 .toList();
 
         return new DayScheduleDto(
@@ -124,5 +129,4 @@ private DayScheduleRepo dayScheduleRepo;
         dayScheduleRepo.delete(schedule);
         return new MessageResponse("DaySchedule deleted successfully");
     }
-
 }

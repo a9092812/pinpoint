@@ -50,16 +50,17 @@ dependencies:
   go_router: ^16.0.0
   flutter_riverpod: ^2.6.1
   file_picker: ^10.2.0
-  retrofit: ^4.7.0
-  dio: ^5.8.0+1
+  retrofit: 4.4.2  # Pin runtime to 4.4.2 to match retrofit_generator 9.x requirements
+  dio: ^5.5.0 
   flutter_map: ^7.0.0
   json_annotation: ^4.9.0
   freezed_annotation: ^3.1.0
   intl: ^0.20.2
+  path: ^1.9.1
 
 
 dev_dependencies:
-  retrofit_generator: ^8.1.0
+  retrofit_generator: ^9.0.0
   build_runner: ^2.5.4
   json_serializable: ^6.8.0
   flutter_test:

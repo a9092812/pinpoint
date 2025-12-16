@@ -2,38 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:pinpoint/model/admin/admin_response.dart';
 import 'package:pinpoint/view/common/admin_detail_screen.dart';
 import 'package:pinpoint/view/users/institute/create_admin_screen.dart';
-
-class AdminListScreen extends StatelessWidget {
-   AdminListScreen({super.key});
-
-  // --- Mock Data ---
-  // Replace this with a call to your API: getAdminsByInstituteId
-  final List<AdminResponse> _admins =  [
-    AdminResponse(id: 'admin-01', name: 'Johnathan Doe', email: 'j.doe@example.com', phone: '+1 123-456-7890', role: 'ADMIN', instituteId: 'inst-A', createdAt: '', updatedAt: '', isVerified: true, notices: [], batches: []),
-    AdminResponse(id: 'admin-02', name: 'Jane Smith', email: 'j.smith@example.com', phone: '+1 987-654-3210', role: 'ADMIN', instituteId: 'inst-A',  createdAt: '', updatedAt: '', isVerified: true, notices: [], batches: []),
-    AdminResponse(id: 'admin-03', name: 'Peter Jones', email: 'p.jones@example.com', phone: '+1 555-555-5555', role: 'ADMIN', instituteId: 'inst-A', createdAt: '', updatedAt: '', isVerified: false, notices: [], batches: []),
-  ];
-  // ---
+ import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pinpoint/viewModel/admin/admin_provider.dart';
+ 
+class AdminListScreen extends ConsumerWidget {
+  const AdminListScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final adminsAsync = ref.watch(adminControllerProvider);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manage Admins'),
-        // If this screen is a tab, you might not need a back button.
-        // If it's pushed on top, the back button will appear automatically.
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(8.0),
-        itemCount: _admins.length,
-        itemBuilder: (context, index) {
-          final admin = _admins[index];
-          return AdminListTile(admin: admin);
-        },
-      ),
+      appBar: AppBar(title: const Text('Manage Admins')),
+ body: adminsAsync.when(
+  data: (admins) {
+    if (admins.isEmpty) {
+      return const Center(
+        child: Text("No admins found for your institute."),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(8.0),
+      itemCount: admins.length,
+      itemBuilder: (context, index) {
+        final admin = admins[index];
+        return AdminListTile(admin: admin);
+      },
+    );
+  },
+  loading: () => const Center(child: CircularProgressIndicator()),
+  error: (error, stack) => Center(child: Text(error.toString())),
+),
+
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-         Navigator.push(context, MaterialPageRoute(builder: (context) => CreateAdminScreen(),));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreateAdminScreen()),
+          );
         },
         icon: const Icon(Icons.add),
         label: const Text('Add Admin'),
@@ -44,8 +50,7 @@ class AdminListScreen extends StatelessWidget {
 
 class AdminListTile extends StatelessWidget {
   final AdminResponse admin;
-
-  const AdminListTile({required this.admin});
+  const AdminListTile({required this.admin, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -71,13 +76,12 @@ class AdminListTile extends StatelessWidget {
             const SizedBox(height: 4),
             Text(admin.phone),
             const SizedBox(height: 6),
-            // Display batch IDs using chips for better UI
             Wrap(
               spacing: 6.0,
               runSpacing: 4.0,
               children: admin.batches
                   .map((e) => Chip(
-                        label: Text(e.id.split('-').last), // Show a cleaner version of the ID
+                        label: Text(e.id.split('-').last),
                         labelStyle: const TextStyle(fontSize: 12),
                         padding: EdgeInsets.zero,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -87,7 +91,6 @@ class AdminListTile extends StatelessWidget {
           ],
         ),
         onTap: () {
-          // Navigate to the detail screen, passing the admin object
           Navigator.of(context).push(MaterialPageRoute(
             builder: (context) => AdminDetailScreen(admin: admin),
           ));

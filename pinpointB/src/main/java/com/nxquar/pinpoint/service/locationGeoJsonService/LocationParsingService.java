@@ -6,167 +6,111 @@ import com.nxquar.pinpoint.Model.Floor;
 import com.nxquar.pinpoint.Model.Room;
 import com.nxquar.pinpoint.Model.Users.Institute;
 import com.nxquar.pinpoint.Repository.BuildingRepository;
-import com.nxquar.pinpoint.Repository.FloorRepository;
 import com.nxquar.pinpoint.Repository.InstituteRepo;
-import com.nxquar.pinpoint.Repository.RoomRepository;
 import com.nxquar.pinpoint.service.implementation.JwtService;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
+import jakarta.transaction.Transactional;
+import org.locationtech.jts.geom.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.locationtech.jts.geom.*;
+import java.util.*;
 
 @Service
-public class    LocationParsingService {
+public class LocationParsingService {
 
     @Autowired
     private BuildingRepository buildingRepository;
 
     @Autowired
-    private FloorRepository floorRepository;
-
-    @Autowired
-    private RoomRepository roomRepository;
-
-    @Autowired
     private InstituteRepo instituteRepo;
-
 
     @Autowired
     private JwtService jwtService;
 
     private final GeometryFactory geometryFactory = new GeometryFactory();
 
-
+    @Transactional
     public Building processGeoJsonBuilding(JsonNode geoJson, String jwt) {
-        String jwtEmail= jwtService.extractUserName(jwt);
-        Institute institute= instituteRepo.findByEmail(jwtEmail);
-        if (institute==null){
-            throw new AccessDeniedException("You are not authorized to update this note.");
+
+        String email = jwtService.extractUserName(jwt);
+        Institute institute = instituteRepo.findByEmail(email);
+        if (institute == null) {
+            throw new AccessDeniedException("Not an institute user");
         }
-        // Create new building
+
         Building building = new Building();
         building.setInstitute(institute);
-        buildingRepository.save(building);
+        building.setFloors(new ArrayList<>());
 
-        // Group features by floor
         Map<Integer, List<JsonNode>> featuresByFloor = new HashMap<>();
-        JsonNode features = geoJson.get("features");
 
-        for (JsonNode feature : features) {
+        for (JsonNode feature : geoJson.get("features")) {
             int floorLevel = feature.get("properties").get("floor").asInt();
-
-//            if (!featuresByFloor.containsKey(floorLevel)) {
-//                featuresByFloor.put(floorLevel, new ArrayList<>());
-//            }
-//            featuresByFloor.get(floorLevel).add(feature);
-
             featuresByFloor.computeIfAbsent(floorLevel, k -> new ArrayList<>()).add(feature);
         }
 
-        // Process each floor
         for (Map.Entry<Integer, List<JsonNode>> entry : featuresByFloor.entrySet()) {
+
             Floor floor = new Floor();
             floor.setLevel(entry.getKey());
             floor.setBuilding(building);
-            floorRepository.save(floor);
+            floor.setRooms(new ArrayList<>());
+            building.getFloors().add(floor);
 
-            // Process rooms on this floor
             for (JsonNode feature : entry.getValue()) {
-                Room room = new Room();
-                JsonNode properties = feature.get("properties");
 
-                room.setName(properties.get("name").asText());
-                room.setType(properties.get("type").asText());
-                room.setFloorLevel(properties.get("floor").asInt());
+                JsonNode props = feature.get("properties");
+
+                Room room = new Room();
+                room.setName(props.get("name").asText());
+                room.setType(props.get("type").asText());
+                room.setFloorLevel(props.get("floor").asInt());
                 room.setFloor(floor);
 
-                // Convert GeoJSON geometry to JTS Geometry
                 Geometry geometry = parseGeometry(feature.get("geometry"));
+
+                // ✅ clean geometry
+                geometry = geometry.buffer(0);
+
+                // 🔴 CRITICAL: force MultiPolygon AFTER buffer
+                if (geometry instanceof Polygon) {
+                    geometry = geometryFactory.createMultiPolygon(
+                            new Polygon[]{(Polygon) geometry}
+                    );
+                }
+
+                geometry.setSRID(4326);
                 room.setGeometry(geometry);
 
-                roomRepository.save(room);
+                floor.getRooms().add(room);
             }
         }
 
-        return building;
+        return buildingRepository.save(building);
     }
+
+    // ---------- Geometry helpers ----------
 
     private Geometry parseGeometry(JsonNode geometryNode) {
         String type = geometryNode.get("type").asText();
-        JsonNode coordinatesNode = geometryNode.get("coordinates");
+        JsonNode coords = geometryNode.get("coordinates");
 
-        Geometry geom;
-        switch (type) {
-            case "Point":
-                geom = createPoint(coordinatesNode);
-                break;
-            case "MultiPoint":
-                geom = createMultiPoint(coordinatesNode);
-                break;
-            case "LineString":
-                geom = createLineString(coordinatesNode);
-                break;
-            case "MultiLineString":
-                geom = createMultiLineString(coordinatesNode);
-                break;
-            case "Polygon":
-                geom = createPolygon(coordinatesNode);
-                break;
-            case "MultiPolygon":
-                geom = createMultiPolygon(coordinatesNode);
-                break;
-            case "GeometryCollection":
-                geom = createGeometryCollection(geometryNode);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported geometry type: " + type);
+        if ("Polygon".equals(type)) {
+            return createPolygon(coords);
         }
-
-        geom.setSRID(4326);  // <---- Set SRID here
-        return geom;
-    }
-
-
-    private Point createPoint(JsonNode coordinates) {
-        return geometryFactory.createPoint(createCoordinate(coordinates));
-    }
-
-    private MultiPoint createMultiPoint(JsonNode coordinates) {
-        return geometryFactory.createMultiPoint(createCoordinates(coordinates));
-    }
-
-    private LineString createLineString(JsonNode coordinates) {
-        return geometryFactory.createLineString(createCoordinates(coordinates));
-    }
-
-    private MultiLineString createMultiLineString(JsonNode coordinates) {
-        LineString[] lineStrings = new LineString[coordinates.size()];
-        for (int i = 0; i < coordinates.size(); i++) {
-            lineStrings[i] = createLineString(coordinates.get(i));
+        if ("MultiPolygon".equals(type)) {
+            return createMultiPolygon(coords);
         }
-        return geometryFactory.createMultiLineString(lineStrings);
+        throw new IllegalArgumentException("Unsupported geometry type: " + type);
     }
 
     private Polygon createPolygon(JsonNode coordinates) {
-        if (coordinates.size() == 0) {
-            return geometryFactory.createPolygon();
-        }
-
         LinearRing shell = geometryFactory.createLinearRing(createCoordinates(coordinates.get(0)));
         LinearRing[] holes = new LinearRing[coordinates.size() - 1];
-
         for (int i = 1; i < coordinates.size(); i++) {
             holes[i - 1] = geometryFactory.createLinearRing(createCoordinates(coordinates.get(i)));
         }
-
         return geometryFactory.createPolygon(shell, holes);
     }
 
@@ -178,27 +122,14 @@ public class    LocationParsingService {
         return geometryFactory.createMultiPolygon(polygons);
     }
 
-    private GeometryCollection createGeometryCollection(JsonNode geometryCollection) {
-        JsonNode geometries = geometryCollection.get("geometries");
-        Geometry[] geometryArray = new Geometry[geometries.size()];
-        for (int i = 0; i < geometries.size(); i++) {
-            geometryArray[i] = parseGeometry(geometries.get(i));
+    private Coordinate[] createCoordinates(JsonNode array) {
+        Coordinate[] coords = new Coordinate[array.size()];
+        for (int i = 0; i < array.size(); i++) {
+            coords[i] = new Coordinate(
+                    array.get(i).get(0).asDouble(),
+                    array.get(i).get(1).asDouble()
+            );
         }
-        return geometryFactory.createGeometryCollection(geometryArray);
-    }
-
-    private Coordinate createCoordinate(JsonNode coordinateNode) {
-        return new Coordinate(
-                coordinateNode.get(0).asDouble(),
-                coordinateNode.get(1).asDouble()
-        );
-    }
-
-    private Coordinate[] createCoordinates(JsonNode coordinatesArray) {
-        Coordinate[] coordinates = new Coordinate[coordinatesArray.size()];
-        for (int i = 0; i < coordinatesArray.size(); i++) {
-            coordinates[i] = createCoordinate(coordinatesArray.get(i));
-        }
-        return coordinates;
+        return coords;
     }
 }

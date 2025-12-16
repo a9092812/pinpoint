@@ -46,11 +46,7 @@ public class BatchServiceImpl implements BatchService {
             throw new AccessDeniedException("Invalid institute access.");
         }
 
-        if (batch.getInstitute() == null || !batch.getInstitute().getId().equals(institute.getId())) {
-            throw new AccessDeniedException("You are not authorized to create a batch for another institute.");
-        }
-
-        batch.setInstitute(institute); // reinforce correct institute
+        batch.setInstitute(institute);
         return batchRepo.save(batch);
     }
 

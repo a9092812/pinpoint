@@ -1,8 +1,8 @@
 package com.nxquar.pinpoint.service;
 
-import com.nxquar.pinpoint.DTO.DayScheduleRequest;
 import com.nxquar.pinpoint.DTO.MessageResponse;
 import com.nxquar.pinpoint.DTO.timetable.DayScheduleDto;
+import com.nxquar.pinpoint.DTO.timetable.request.DayScheduleRequest;
 import com.nxquar.pinpoint.Model.Timetable.DaySchedule;
 
 import java.util.List;
