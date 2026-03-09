@@ -10,104 +10,93 @@ class TimetableRepository {
 
   TimetableRepository(this._service);
 
-  // === Timetable CRUD ===
+  // ===== Timetable =====
   Future<List<TimetableSummary>> getAllTimetables() async {
-    try {
-      final response = await _service.getTimetables();
-      return response.data;
-    } on DioException catch (e) {
-      throw Exception('Failed to fetch timetables: ${e.message}');
-    }
+    final res = await _service.getTimetables();
+    return res.data;
   }
 
   Future<TimetableDetail> getTimetableById(String id) async {
-    try {
-      final response = await _service.getTimetableById(id);
-      return response.data;
-    } on DioException catch (e) {
-      throw Exception('Failed to fetch timetable detail: ${e.message}');
-    }
+    final res = await _service.getTimetableById(id);
+    return res.data;
   }
 
-  Future<TimetableDetail?> createTimetable(String name, String batchId) async {
-    final data = {"name": name, "batchId": batchId};
-    try {
-      final response = await _service.createTimetable(data);
-      return response.data;
-    } on DioException catch (e) {
-      print('Dio error creating timetable: ${e.message}');
-      return null;
-    }
+  Future<TimetableDetail> getTimetableByBatchId(String batchId) async {
+    final res = await _service.getTimetableByBatchId(batchId);
+    return res.data;
   }
 
-    Future<TimetableDetail> getTimetableByBatchId(String batchId) async {
-    try {
-      final response = await _service.getTimetableByBatchId(batchId);
-      return response.data;
-    } on DioException catch (e) {
-      throw Exception('Failed to fetch timetable by batch ID: ${e.message}');
-    }
+  Future<TimetableDetail> createTimetable(
+    String name,
+    String batchId,
+  ) async {
+    final res = await _service.createTimetable({
+      "name": name,
+      "batchId": batchId,
+    });
+    return res.data;
   }
 
-
-  Future<TimetableDetail?> updateTimetable(String id, String name, String batchId) async {
-    final data = {"id": id, "name": name, "batchId": batchId};
-    try {
-      final response = await _service.updateTimetable(data);
-      return response.data;
-    } on DioException catch (e) {
-      print('Dio error updating timetable: ${e.message}');
-      return null;
-    }
+  Future<TimetableDetail> updateTimetable(
+    String id,
+    String name,
+    String batchId,
+  ) async {
+    final res = await _service.updateTimetable({
+      "id": id,
+      "name": name,
+      "batchId": batchId,
+    });
+    return res.data;
   }
 
   Future<void> deleteTimetable(String id) async {
-    try {
-      await _service.deleteTimetable(id);
-    } on DioException catch (e) {
-      throw Exception('Failed to delete timetable: ${e.message}');
-    }
+    await _service.deleteTimetable(id);
   }
 
-  // === DaySchedule ===
+  // ===== DaySchedule =====
   Future<DaySchedule> getDaySchedule(String id) async {
-    try {
-      final response = await _service.getDaySchedule(id);
-      return response.data;
-    } on DioException catch (e) {
-      throw Exception('Failed to fetch day schedule: ${e.message}');
-    }
+    final res = await _service.getDaySchedule(id);
+    return res.data;
   }
 
-  Future<DaySchedule?> updateDaySchedule(DaySchedule schedule) async {
-    final data = schedule.toJson();
-    try {
-      final response = await _service.updateDaySchedule(schedule.id, data);
-      return response.data;
-    } on DioException catch (e) {
-      print('Dio error updating day schedule: ${e.message}');
-      return null;
-    }
+  Future<DaySchedule> createDaySchedule(
+    String timetableId,
+    DaySchedule schedule,
+  ) async {
+    final res = await _service.createDaySchedule(
+      timetableId,
+      schedule.toJson(),
+    );
+    return res.data;
   }
 
-  // === Period ===
+  Future<DaySchedule> updateDaySchedule(
+    DaySchedule schedule,
+  ) async {
+    final res = await _service.updateDaySchedule(
+      schedule.id,
+      schedule.toJson(),
+    );
+    return res.data;
+  }
+
+  // ===== Period =====
   Future<Period> getPeriod(String id) async {
-    try {
-      final response = await _service.getPeriod(id);
-      return response.data;
-    } on DioException catch (e) {
-      throw Exception('Failed to fetch period: ${e.message}');
-    }
+    final res = await _service.getPeriod(id);
+    return res.data;
   }
 
-  Future<Period?> updatePeriod(Period period) async {
-    final data = period.toJson();
-    try {
-      final response = await _service.updatePeriod(period.id, data);
-      return response.data;
-    } on DioException catch (e) {
-      print('Dio error updating period: ${e.message}');
-      return null;
-    }
+  Future<Period> createPeriod(Period period) async {
+    final res = await _service.createPeriod(period.toJson());
+    return res.data;
+  }
+
+  Future<Period> updatePeriod(Period period) async {
+    final res = await _service.updatePeriod(
+      period.id,
+      period.toJson(),
+    );
+    return res.data;
   }
 }

@@ -10,7 +10,7 @@ part of 'timetable_service.dart';
 
 class _TimetableService implements TimetableService {
   _TimetableService(this._dio, {this.baseUrl, this.errorLogger}) {
-    baseUrl ??= 'https://5bb40f69da76.ngrok-free.app//api';
+    baseUrl ??= 'https://c5636a191455.ngrok-free.app//api';
   }
 
   final Dio _dio;
@@ -62,6 +62,36 @@ class _TimetableService implements TimetableService {
           .compose(
             _dio.options,
             '/timetables/${id}',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late TimetableDetail _value;
+    try {
+      _value = TimetableDetail.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<TimetableDetail>> getTimetableByBatchId(
+    String batchId,
+  ) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<HttpResponse<TimetableDetail>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/timetables/batch/${batchId}',
             queryParameters: queryParameters,
             data: _data,
           )
@@ -142,36 +172,6 @@ class _TimetableService implements TimetableService {
   }
 
   @override
-  Future<HttpResponse<TimetableDetail>> getTimetableByBatchId(
-    String batchId,
-  ) async {
-    final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
-    final _headers = <String, dynamic>{};
-    const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<HttpResponse<TimetableDetail>>(
-      Options(method: 'GET', headers: _headers, extra: _extra)
-          .compose(
-            _dio.options,
-            '/timetables/batch/${batchId}',
-            queryParameters: queryParameters,
-            data: _data,
-          )
-          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
-    );
-    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late TimetableDetail _value;
-    try {
-      _value = TimetableDetail.fromJson(_result.data!);
-    } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options);
-      rethrow;
-    }
-    final httpResponse = HttpResponse(_value, _result);
-    return httpResponse;
-  }
-
-  @override
   Future<HttpResponse<void>> deleteTimetable(String id) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
@@ -223,18 +223,50 @@ class _TimetableService implements TimetableService {
   @override
   Future<HttpResponse<DaySchedule>> updateDaySchedule(
     String id,
-    Map<String, dynamic> schedule,
+    Map<String, dynamic> body,
   ) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
-    _data.addAll(schedule);
+    _data.addAll(body);
     final _options = _setStreamType<HttpResponse<DaySchedule>>(
       Options(method: 'PUT', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
             '/day-schedules/${id}',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late DaySchedule _value;
+    try {
+      _value = DaySchedule.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<DaySchedule>> createDaySchedule(
+    String timetableId,
+    Map<String, dynamic> body,
+  ) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final _data = <String, dynamic>{};
+    _data.addAll(body);
+    final _options = _setStreamType<HttpResponse<DaySchedule>>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/schedules/timetable/${timetableId}',
             queryParameters: queryParameters,
             data: _data,
           )
@@ -281,15 +313,44 @@ class _TimetableService implements TimetableService {
   }
 
   @override
+  Future<HttpResponse<Period>> createPeriod(Map<String, dynamic> body) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final _data = <String, dynamic>{};
+    _data.addAll(body);
+    final _options = _setStreamType<HttpResponse<Period>>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/periods',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late Period _value;
+    try {
+      _value = Period.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
   Future<HttpResponse<Period>> updatePeriod(
     String id,
-    Map<String, dynamic> period,
+    Map<String, dynamic> body,
   ) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
-    _data.addAll(period);
+    _data.addAll(body);
     final _options = _setStreamType<HttpResponse<Period>>(
       Options(method: 'PUT', headers: _headers, extra: _extra)
           .compose(

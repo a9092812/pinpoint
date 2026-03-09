@@ -10,7 +10,7 @@ part of 'address_service.dart';
 
 class _AddressService implements AddressService {
   _AddressService(this._dio, {this.baseUrl, this.errorLogger}) {
-    baseUrl ??= 'https://5bb40f69da76.ngrok-free.app//api/addresses';
+    baseUrl ??= 'https://c5636a191455.ngrok-free.app//api/addresses';
   }
 
   final Dio _dio;

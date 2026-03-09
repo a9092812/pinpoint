@@ -10,7 +10,7 @@ part of 'institute_service.dart';
 
 class _InstituteApi implements InstituteApi {
   _InstituteApi(this._dio, {this.baseUrl, this.errorLogger}) {
-    baseUrl ??= 'https://5bb40f69da76.ngrok-free.app/';
+    baseUrl ??= 'https://c5636a191455.ngrok-free.app/';
   }
 
   final Dio _dio;

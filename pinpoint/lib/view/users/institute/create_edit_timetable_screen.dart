@@ -1,248 +1,315 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pinpoint/view/users/institute/subject_list_screen.dart';
+import 'package:uuid/uuid.dart';
+
+import 'package:pinpoint/model/timetable/timetable_detail.dart';
 import 'package:pinpoint/model/timetable/day_schedule.dart';
 import 'package:pinpoint/model/timetable/period.dart';
-import 'package:pinpoint/model/timetable/timetable_detail.dart';
+import 'package:pinpoint/view/users/institute/institute_building_picker_screen.dart';
 import 'package:pinpoint/viewModel/timetable/timetable_provider.dart';
-import 'package:uuid/uuid.dart';
 
 class CreateOrEditTimetableScreen extends ConsumerStatefulWidget {
   final TimetableDetail? existingTimetable;
   final String batchId;
 
-  const CreateOrEditTimetableScreen({super.key, this.existingTimetable, required this.batchId});
+  const CreateOrEditTimetableScreen({
+    super.key,
+    this.existingTimetable,
+    required this.batchId,
+  });
 
   @override
-  ConsumerState<CreateOrEditTimetableScreen> createState() => _CreateOrEditTimetableScreenState();
+  ConsumerState<CreateOrEditTimetableScreen> createState() =>
+      _CreateOrEditTimetableScreenState();
 }
 
-class _CreateOrEditTimetableScreenState extends ConsumerState<CreateOrEditTimetableScreen> {
+class _CreateOrEditTimetableScreenState
+    extends ConsumerState<CreateOrEditTimetableScreen> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _timetableNameController;
+  late TextEditingController _nameController;
   late List<DaySchedule> _schedules;
 
   @override
   void initState() {
     super.initState();
-    if (widget.existingTimetable != null) {
-      _timetableNameController = TextEditingController(text: widget.existingTimetable!.name);
-      _schedules = List.from(widget.existingTimetable!.schedules);
-    } else {
-      _timetableNameController = TextEditingController();
-      _schedules = [
-        DaySchedule(id: 'day-mon', day: 'Monday', periods: []),
-        DaySchedule(id: 'day-tue', day: 'Tuesday', periods: []),
-        DaySchedule(id: 'day-wed', day: 'Wednesday', periods: []),
-        DaySchedule(id: 'day-thu', day: 'Thursday', periods: []),
-        DaySchedule(id: 'day-fri', day: 'Friday', periods: []),
-        DaySchedule(id: 'day-sat', day: 'Saturday', periods: []),
-      ];
-    }
+
+    _nameController =
+        TextEditingController(text: widget.existingTimetable?.name ?? '');
+
+    _schedules = widget.existingTimetable?.schedules
+            .map((d) => DaySchedule(
+                  id: d.id,
+                  day: d.day,
+                  periods: List.from(d.periods),
+                ))
+            .toList() ??
+        [
+          DaySchedule(id: 'mon', day: 'Monday', periods: const []),
+          DaySchedule(id: 'tue', day: 'Tuesday', periods: const []),
+          DaySchedule(id: 'wed', day: 'Wednesday', periods: const []),
+          DaySchedule(id: 'thu', day: 'Thursday', periods: const []),
+          DaySchedule(id: 'fri', day: 'Friday', periods: const []),
+          DaySchedule(id: 'sat', day: 'Saturday', periods: const []),
+        ];
   }
 
-  void _saveTimetable() async {
-    if (_formKey.currentState!.validate()) {
-      final controller = ref.read(timetableControllerProvider.notifier);
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      if (widget.existingTimetable == null) {
-        await controller.createTimetable(_timetableNameController.text, widget.batchId);
-      } else {
-        await controller.updateTimetable(widget.existingTimetable!.id, _timetableNameController.text, widget.batchId);
-      }
+    final controller =
+        ref.read(timetableControllerProvider.notifier);
 
-      if (mounted) Navigator.of(context).pop(true);
-    }
+    widget.existingTimetable == null
+        ? await controller.createTimetable(
+            _nameController.text,
+            widget.batchId,
+          )
+        : await controller.updateTimetable(
+            widget.existingTimetable!.id,
+            _nameController.text,
+            widget.batchId,
+          );
+
+    if (mounted) Navigator.pop(context, true);
   }
 
-  void _addOrEditPeriod(DaySchedule daySchedule, {Period? existingPeriod}) async {
-    final result = await showDialog<Period>(
+  void _addOrEditPeriod(DaySchedule day, {Period? existing}) async {
+    final period = await showDialog<Period>(
       context: context,
-      builder: (_) => _AddEditPeriodDialog(dayScheduleId: daySchedule.id, period: existingPeriod),
+      builder: (_) => _AddEditPeriodDialog(
+        dayScheduleId: day.id,
+        existing: existing,
+      ),
     );
 
-    if (result != null) {
-      final controller = ref.read(timetableControllerProvider.notifier);
-      setState(() {
-        final dayIndex = _schedules.indexWhere((s) => s.id == daySchedule.id);
-        if (existingPeriod != null) {
-          final periodIndex = _schedules[dayIndex].periods.indexWhere((p) => p.id == existingPeriod.id);
-          _schedules[dayIndex].periods[periodIndex] = result;
-        } else {
-          _schedules[dayIndex].periods.add(result);
-        }
-        _schedules[dayIndex].periods.sort((a, b) => a.startTime.compareTo(b.startTime));
-      });
+    if (period == null) return;
 
-      // Persist via API
-      await controller.updateDaySchedule(daySchedule);
-      await controller.updatePeriod(result);
-    }
+    setState(() {
+      final index = _schedules.indexWhere((d) => d.id == day.id);
+      existing == null
+          ? _schedules[index].periods.add(period)
+          : _schedules[index]
+              .periods[_schedules[index]
+                  .periods
+                  .indexWhere((p) => p.id == existing.id)] = period;
+
+      _schedules[index].periods
+          .sort((a, b) => a.startTime.compareTo(b.startTime));
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final loading = ref.watch(timetableControllerProvider).isLoading;
+    final loading =
+        ref.watch(timetableControllerProvider).isLoading;
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.existingTimetable == null ? 'Create Timetable' : 'Edit Timetable')),
+      appBar: AppBar(
+        title: Text(widget.existingTimetable == null
+            ? 'Create Timetable'
+            : 'Edit Timetable'),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _save,
+        icon: const Icon(Icons.save),
+        label: const Text('Save'),
+      ),
       body: Stack(
         children: [
           Form(
             key: _formKey,
             child: ListView(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               children: [
                 TextFormField(
-                  controller: _timetableNameController,
+                  controller: _nameController,
                   decoration: const InputDecoration(
                     labelText: 'Timetable Name',
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.description_outlined),
                   ),
-                  validator: (value) => (value == null || value.isEmpty) ? 'Please enter a name' : null,
+                  validator: (v) =>
+                      v == null || v.isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 24),
-                ..._schedules.map((day) => _buildDayCard(day)),
+                ..._schedules.map(_buildDayCard),
               ],
             ),
           ),
-          if (loading) const Center(child: CircularProgressIndicator()),
+          if (loading)
+            const Center(child: CircularProgressIndicator()),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _saveTimetable,
-        label: const Text('Save Timetable'),
-        icon: const Icon(Icons.save_outlined),
-      ),
     );
   }
 
-  Widget _buildDayCard(DaySchedule daySchedule) {
+  Widget _buildDayCard(DaySchedule day) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(daySchedule.day, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline, color: Colors.green),
-                  onPressed: () => _addOrEditPeriod(daySchedule),
-                )
-              ],
+      child: Column(
+        children: [
+          ListTile(
+            title: Text(day.day,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            trailing: IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: () => _addOrEditPeriod(day),
             ),
-            const Divider(),
-            if (daySchedule.periods.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: Center(child: Text('No periods added.')),
-              )
-            else
-              ...daySchedule.periods.map((p) => ListTile(
-                    title: Text(p.subject),
-                    subtitle: Text('${p.startTime} - ${p.endTime} in ${p.roomName}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 20),
-                      onPressed: () => _addOrEditPeriod(daySchedule, existingPeriod: p),
-                    ),
-                  )),
-          ],
-        ),
+          ),
+          if (day.periods.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: Text('No periods added'),
+            )
+          else
+            ...day.periods.map(
+              (p) => ListTile(
+                title: Text(p.subject),
+                subtitle: Text('${p.startTime} - ${p.endTime}'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () =>
+                      _addOrEditPeriod(day, existing: p),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 }
 
-// --- Dialog for Adding/Editing a Period ---
+/* ---------------- PERIOD DIALOG ---------------- */
+
 class _AddEditPeriodDialog extends StatefulWidget {
   final String dayScheduleId;
-  final Period? period;
+  final Period? existing;
 
-  const _AddEditPeriodDialog({required this.dayScheduleId, this.period});
+  const _AddEditPeriodDialog({
+    required this.dayScheduleId,
+    this.existing,
+  });
 
   @override
-  State<_AddEditPeriodDialog> createState() => _AddEditPeriodDialogState();
+  State<_AddEditPeriodDialog> createState() =>
+      _AddEditPeriodDialogState();
 }
 
-class _AddEditPeriodDialogState extends State<_AddEditPeriodDialog> {
-  final _formKey = GlobalKey<FormState>();
-  late TextEditingController _subjectController;
-  late TextEditingController _teacherController;
-  late TextEditingController _roomController;
-  late TextEditingController _startTimeController;
-  late TextEditingController _endTimeController;
+class _AddEditPeriodDialogState
+    extends State<_AddEditPeriodDialog> {
+  SelectedSubject? subject;
+  SelectedRoom? room;
+
+  late TextEditingController teacher;
+  late TextEditingController start;
+  late TextEditingController end;
 
   @override
   void initState() {
     super.initState();
-    final p = widget.period;
-    _subjectController = TextEditingController(text: p?.subject);
-    _teacherController = TextEditingController(text: p?.teacher);
-    _roomController = TextEditingController(text: p?.roomName);
-    _startTimeController = TextEditingController(text: p?.startTime);
-    _endTimeController = TextEditingController(text: p?.endTime);
+    subject = widget.existing == null
+        ? null
+        : SelectedSubject(
+            widget.existing!.subjectId, widget.existing!.subject);
+    room = widget.existing == null
+        ? null
+        : SelectedRoom(
+            widget.existing!.roomId, widget.existing!.roomName);
+
+    teacher =
+        TextEditingController(text: widget.existing?.teacher);
+    start =
+        TextEditingController(text: widget.existing?.startTime);
+    end =
+        TextEditingController(text: widget.existing?.endTime);
   }
 
   void _submit() {
-    if (_formKey.currentState!.validate()) {
-      final newPeriod = Period(
-        id: widget.period?.id ?? const Uuid().v4(),
+    if (subject == null || room == null) return;
+
+    Navigator.pop(
+      context,
+      Period(
+        id: widget.existing?.id ?? const Uuid().v4(),
         name: 'Period',
-        subject: _subjectController.text,
-        teacher: _teacherController.text,
-        roomName: _roomController.text,
-        startTime: _startTimeController.text,
-        endTime: _endTimeController.text,
+        subject: subject!.name,
+        subjectId: subject!.id,
+        teacher: teacher.text,
+        roomName: room!.name,
+        roomId: room!.id,
+        startTime: start.text,
+        endTime: end.text,
         scheduleDayId: widget.dayScheduleId,
-        subjectId: 'subject-id-placeholder',
-        roomId: 'room-id-placeholder',
-      );
-      Navigator.of(context).pop(newPeriod);
-    }
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.period == null ? 'Add Period' : 'Edit Period'),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextFormField(controller: _subjectController, decoration: const InputDecoration(labelText: 'Subject'), validator: (v) => v!.isEmpty ? 'Required' : null),
-              TextFormField(controller: _teacherController, decoration: const InputDecoration(labelText: 'Teacher'), validator: (v) => v!.isEmpty ? 'Required' : null),
-              TextFormField(controller: _roomController, decoration: const InputDecoration(labelText: 'Room'), validator: (v) => v!.isEmpty ? 'Required' : null),
-              TextFormField(
-                controller: _startTimeController,
-                readOnly: true,
-                decoration: const InputDecoration(labelText: 'Start Time'),
-                onTap: () async {
-                  final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
-                  if (picked != null) _startTimeController.text = picked.format(context);
-                },
-                validator: (v) => v!.isEmpty ? 'Required' : null,
-              ),
-              TextFormField(
-                controller: _endTimeController,
-                readOnly: true,
-                decoration: const InputDecoration(labelText: 'End Time'),
-                onTap: () async {
-                  final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
-                  if (picked != null) _endTimeController.text = picked.format(context);
-                },
-                validator: (v) => v!.isEmpty ? 'Required' : null,
-              ),
-            ],
+      title: Text(widget.existing == null ? 'Add Period' : 'Edit Period'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            title: Text(subject?.name ?? 'Select Subject'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () async {
+              final s = await Navigator.push<SelectedSubject>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const SubjectsListScreen(selectMode: true),
+                ),
+              );
+              if (s != null) setState(() => subject = s);
+            },
           ),
-        ),
+          ListTile(
+            title: Text(room?.name ?? 'Select Room'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () async {
+              final r = await Navigator.push<SelectedRoom>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BuildingPickerScreen(),
+                ),
+              );
+              if (r != null) setState(() => room = r);
+            },
+          ),
+          TextField(
+              controller: teacher,
+              decoration:
+                  const InputDecoration(labelText: 'Teacher')),
+          TextField(
+            controller: start,
+            readOnly: true,
+            decoration:
+                const InputDecoration(labelText: 'Start Time'),
+            onTap: () async {
+              final t = await showTimePicker(
+                  context: context, initialTime: TimeOfDay.now());
+              if (t != null) start.text = t.format(context);
+            },
+          ),
+          TextField(
+            controller: end,
+            readOnly: true,
+            decoration:
+                const InputDecoration(labelText: 'End Time'),
+            onTap: () async {
+              final t = await showTimePicker(
+                  context: context, initialTime: TimeOfDay.now());
+              if (t != null) end.text = t.format(context);
+            },
+          ),
+        ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel')),
         ElevatedButton(onPressed: _submit, child: const Text('Save')),
       ],
     );

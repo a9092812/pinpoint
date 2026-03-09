@@ -10,7 +10,7 @@ part of 'subject_service.dart';
 
 class _SubjectService implements SubjectService {
   _SubjectService(this._dio, {this.baseUrl, this.errorLogger}) {
-    baseUrl ??= 'https://5bb40f69da76.ngrok-free.app//api/subjects';
+    baseUrl ??= 'https://c5636a191455.ngrok-free.app//api/subjects';
   }
 
   final Dio _dio;

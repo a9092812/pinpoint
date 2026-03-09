@@ -10,7 +10,7 @@ part of 'admin_service.dart';
 
 class _AdminService implements AdminService {
   _AdminService(this._dio, {this.baseUrl, this.errorLogger}) {
-    baseUrl ??= 'https://5bb40f69da76.ngrok-free.app//api/admins';
+    baseUrl ??= 'https://c5636a191455.ngrok-free.app//api/admins';
   }
 
   final Dio _dio;

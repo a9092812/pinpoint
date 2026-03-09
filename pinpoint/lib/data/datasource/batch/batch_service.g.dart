@@ -10,7 +10,7 @@ part of 'batch_service.dart';
 
 class _BatchService implements BatchService {
   _BatchService(this._dio, {this.baseUrl, this.errorLogger}) {
-    baseUrl ??= 'https://5bb40f69da76.ngrok-free.app/';
+    baseUrl ??= 'https://c5636a191455.ngrok-free.app/';
   }
 
   final Dio _dio;

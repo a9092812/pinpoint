@@ -10,7 +10,7 @@ part of 'auth_service.dart';
 
 class _AuthService implements AuthService {
   _AuthService(this._dio, {this.baseUrl, this.errorLogger}) {
-    baseUrl ??= 'https://5bb40f69da76.ngrok-free.app//api/auth';
+    baseUrl ??= 'https://c5636a191455.ngrok-free.app//api/auth';
   }
 
   final Dio _dio;

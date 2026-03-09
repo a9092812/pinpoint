@@ -10,7 +10,7 @@ part of 'period_service.dart';
 
 class _PeriodService implements PeriodService {
   _PeriodService(this._dio, {this.baseUrl, this.errorLogger}) {
-    baseUrl ??= 'https://5bb40f69da76.ngrok-free.app//api/periods';
+    baseUrl ??= 'https://c5636a191455.ngrok-free.app//api/periods';
   }
 
   final Dio _dio;
